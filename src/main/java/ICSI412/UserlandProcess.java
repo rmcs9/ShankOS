@@ -54,13 +54,7 @@ public abstract class UserlandProcess implements Runnable{
 
 	public UserlandProcess(String processName){
 		thread = new Thread(this, processName);
-		semaphore = new Semaphore(1);
-		try{
-			semaphore.acquire();
-		}
-		catch(InterruptedException e){
-			throw new RuntimeException(e);
-		}
+		semaphore = new Semaphore(0);
 		thread.start();
 	}
 

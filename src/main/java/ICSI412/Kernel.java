@@ -45,14 +45,8 @@ public class Kernel implements Runnable{
 
 	public Kernel(){
 		thread = new Thread(this, "KERNAL");
-		semaphore = new Semaphore(1);
+		semaphore = new Semaphore(0);
 		scheduler = new Scheduler();
-		try{
-			semaphore.acquire();
-		}
-		catch(InterruptedException e){
-			throw new RuntimeException(e);
-		}
 		thread.start();
 	}
 }

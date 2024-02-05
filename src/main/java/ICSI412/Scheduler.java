@@ -31,6 +31,12 @@ public class Scheduler{
 			//add it to the back of the list
 			processes.addLast(currentProcess);
 		}
+		try{
+			Thread.sleep(10);
+		}
+		catch(InterruptedException e){
+			throw new RuntimeException(e);
+		}
 		//grab the new current process from the front of the list
 		currentProcess = processes.removeFirst();	
 	}
