@@ -33,6 +33,11 @@ public class Kernel implements Runnable{
 				case SwitchProcess:
 					scheduler.SwitchProcess();
 				break;
+				case Sleep:
+					scheduler.Sleep((int) OS.params.get(0));
+				break;
+				case CreatePriorityProcess:
+					scheduler.CreateProcess((UserlandProcess)OS.params.get(0), (OS.Priority)OS.params.get(1));
 			}
 			//start the new current process
 			scheduler.currentProcess.start();

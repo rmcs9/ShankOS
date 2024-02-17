@@ -4,6 +4,8 @@ import java.util.concurrent.Semaphore;
 
 public abstract class UserlandProcess implements Runnable{
 
+	//ONLY HERE FOR THE PURPOSE OF TESTING
+	public String pname;
 
 	private Thread thread;
 
@@ -53,6 +55,7 @@ public abstract class UserlandProcess implements Runnable{
 	}
 
 	public UserlandProcess(String processName){
+		pname = processName;
 		thread = new Thread(this, processName);
 		semaphore = new Semaphore(0);
 		thread.start();
