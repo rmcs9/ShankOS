@@ -11,7 +11,9 @@ public class Scheduler{
 	
 	private Timer timer;
 	
-	public PCB currentProcess;
+	private PCB currentProcess;
+
+	private Kernel kernel;
 
 	//NEW LISTS
 	private LinkedList<PCB> realtimeProcesses;
@@ -158,7 +160,6 @@ public class Scheduler{
 			//pick a backround process
 			currentProcess = backroundProcesses.removeFirst();
 		}
-
 	}
 
 	public void Sleep(int milliseconds){
@@ -169,8 +170,23 @@ public class Scheduler{
 		//pick new process to run
 		pickProcess();
 	}
+
+	public PCB getCurrentlyRunning(){
+		return currentProcess;
+	}
+
+	public void Exit(){
+		//set the current processes exit flag
+		currentProcess.exit();
+		System.out.println("freeing devices on " + currentProcess.getPname());
+		//free the current processes devices
+		kernel.freeDevices();
+		//switch processes
+		SwitchProcess();
+	}
 	
-	public Scheduler(){
+	public Scheduler(Kernel k){
+		kernel = k;
 		realtimeProcesses = new LinkedList<PCB>();
 		interactiveProcesses = new LinkedList<PCB>();
 		backroundProcesses = new LinkedList<PCB>();
@@ -181,7 +197,7 @@ public class Scheduler{
 		//timer task which calls requestStop on the current process
 		TimerTask interrupt = new TimerTask(){
 			public void run(){
-				if(currentProcess != null){
+				if(currentProcess != null) {
 					currentProcess.requestStop();
 				}
 			}

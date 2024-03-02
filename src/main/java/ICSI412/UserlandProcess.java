@@ -12,6 +12,8 @@ public abstract class UserlandProcess implements Runnable{
 	private Semaphore semaphore;
 
 	private boolean quantumExp;
+
+	public boolean exited;
 	
 	public void requestStop(){
 		quantumExp = true;
@@ -58,6 +60,7 @@ public abstract class UserlandProcess implements Runnable{
 		pname = processName;
 		thread = new Thread(this, processName);
 		semaphore = new Semaphore(0);
+		exited = false;
 		thread.start();
 	}
 

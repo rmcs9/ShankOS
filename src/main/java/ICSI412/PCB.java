@@ -2,13 +2,11 @@ package ICSI412;
 
 
 
-public class PCB implements Runnable{
+public class PCB{
 	
 	private UserlandProcess up;
 	
 	public long sleepTime = 0;
-
-	private Thread thread;
 
 	public OS.Priority priority;
 
@@ -17,13 +15,18 @@ public class PCB implements Runnable{
 	public int timeouts = 0;
 	
 	public int PID;
+
+	public int[] fileDescriptors;
 	
 	public PCB(UserlandProcess u, OS.Priority p){
-		thread = new Thread(this);
 		PID = ++nextPID;
 		up = u;
 		priority = p;
 		sleepTime = 0;
+		fileDescriptors = new int[10];
+		for(int i = 0; i < 10; i++){
+			fileDescriptors[i] = -1;
+		}
 	}
 
 	public void start(){
@@ -73,15 +76,19 @@ public class PCB implements Runnable{
 		}
 	}
 
-	boolean isDone(){
-		return up.isDone();
-	}
-
-	public void run(){
-		up.start();
+	public void cooperate(){
+		up.cooperate();
 	}
 
 	public String getPname(){
 		return up.pname;
+	}
+
+	public boolean isDone(){
+		return up.exited || up.isDone();
+	}
+
+	public void exit(){
+		up.exited = true;
 	}
 }
