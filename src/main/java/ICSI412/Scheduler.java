@@ -4,8 +4,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
-import java.time.Clock;
 import java.util.Random;
+import java.util.HashMap;
+import java.time.Clock;
 
 public class Scheduler{
 	
@@ -24,10 +25,15 @@ public class Scheduler{
 	private Clock sysClock;
 	private Random prob = new Random();
 
+	private HashMap<Integer, PCB> pidToPCB;
+	private HashMap<Integer, PCB> waitingPCB;
+
 	public int CreateProcess(UserlandProcess up){
 		PCB thisProcess = new PCB(up, OS.Priority.Interactive);
 		//add the new process to the processList
 		interactiveProcesses.addLast(thisProcess);
+		
+		pidToPCB.put(thisProcess.PID, thisProcess);
 		//if there is no process currenlty running, call switchProcess
 		if(currentProcess == null){
 			SwitchProcess();
@@ -50,6 +56,8 @@ public class Scheduler{
 				backroundProcesses.addLast(thisProcess);
 			break;
 		}
+
+		pidToPCB.put(thisProcess.PID, thisProcess);
 		//if there are no processes running, call SwitchProcess
 		if(currentProcess == null){
 			SwitchProcess();
@@ -72,12 +80,6 @@ public class Scheduler{
 					backroundProcesses.addLast(currentProcess);
 				break;
 			}
-		}
-		try{
-			Thread.sleep(10);
-		}
-		catch(InterruptedException e){
-			throw new RuntimeException(e);
 		}
 		//wake processes
 		wakeProcesses();
@@ -176,6 +178,7 @@ public class Scheduler{
 	}
 
 	public void Exit(){
+		pidToPCB.remove(currentProcess.PID);
 		//set the current processes exit flag
 		currentProcess.exit();
 		System.out.println("freeing devices on " + currentProcess.getPname());
@@ -183,6 +186,67 @@ public class Scheduler{
 		kernel.freeDevices();
 		//switch processes
 		SwitchProcess();
+	}
+
+	//KERNEL MESSAGE ASSIGNMENT!!!!---------------------------------------------------------------
+	
+	public int GetPID(){
+		//grabs the currently running PCB's PID
+		return currentProcess.PID;
+	}
+
+	public int GetPIDByName(String pname){
+		//search every alive process and attempt to match
+		//its name to pname
+		for(PCB prc : pidToPCB.values()){
+			if(pname.equals(prc.getPname())){
+				return prc.PID;
+			}
+		}
+		//if there is no alive process with a name that matches pname,
+		//return -1
+		return -1;
+	}
+
+	public PCB pidFetch(int pid){
+		//check the pidToPCB hashmap for a pcb with the same pid as "pid" 
+		return pidToPCB.containsKey(pid) ? pidToPCB.get(pid) : null;
+	}
+
+	public void waitForMSG(){
+		//put the currently running process in the message wait queue
+		waitingPCB.put(currentProcess.PID, currentProcess);	
+		//pick a new process to run
+		pickProcess();
+	}
+
+	public void msgWake(int pid){
+		//fetch the PCB that needs to be woken up 
+		PCB waitingProcess = waitingPCB.get(pid);
+		//place the PCB back into its runnable queue
+		if(waitingProcess != null){
+			switch(waitingProcess.priority){
+				case RealTime:
+					realtimeProcesses.addLast(waitingProcess);
+				break;
+				case Interactive:
+					interactiveProcesses.addLast(waitingProcess);
+				break;
+				case Backround:
+				backroundProcesses.addLast(waitingProcess);
+				break;
+			}
+			//remove the PCB from the wait queue
+			waitingPCB.remove(pid);
+		}
+		else{
+			throw new RuntimeException("attempting to wake a process that is not waiting for a msg");
+		}
+		
+	}
+
+	public boolean PCBisWaiting(int pid){
+		return waitingPCB.containsKey(pid);
 	}
 	
 	public Scheduler(Kernel k){
@@ -192,6 +256,8 @@ public class Scheduler{
 		backroundProcesses = new LinkedList<PCB>();
 		//construct a new priority queue with a comparator object that sorts the PCB's by their sleep time
 		sleepProcesses = new PriorityQueue<PCB>((PCB1, PCB2) -> Long.compare(PCB1.sleepTime, PCB2.sleepTime));
+		pidToPCB = new HashMap<>();
+		waitingPCB = new HashMap<>();
 		timer = new Timer();
 		sysClock = Clock.systemDefaultZone();
 		//timer task which calls requestStop on the current process

@@ -8,7 +8,8 @@ public class OS{
 
 	public enum CallType{
 		CreateProcess, SwitchProcess, Sleep, CreatePriorityProcess,
-		Open, Close, Read, Seek, Write, Exit
+		Open, Close, Read, Seek, Write, Exit, GetPID, GetPIDByName,
+		SendMessage, WaitForMessage, FetchMessage, 
 	}
 
 	public enum Priority{
@@ -37,7 +38,7 @@ public class OS{
 		else{
 			while(kernel.getScheduler().getCurrentlyRunning() == null){
 				try{
-					Thread.sleep(50);
+					Thread.sleep(20);
 				}
 				catch(InterruptedException e){
 					throw new RuntimeException(e);
@@ -66,7 +67,7 @@ public class OS{
 		else{
 			while(kernel.getScheduler().getCurrentlyRunning() == null){
 				try{
-					Thread.sleep(50);
+					Thread.sleep(20);
 				}
 				catch(InterruptedException e){
 					throw new RuntimeException(e);
@@ -80,10 +81,11 @@ public class OS{
 	public static void SwitchProcess(){
 		//set the current call
 		currentCall = CallType.SwitchProcess;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 	}
 
 	public static void Startup(UserlandProcess init){
@@ -101,10 +103,11 @@ public class OS{
 		params = new ArrayList<Object>();
 		//add the sleep time to the params
 		params.add(milliseconds);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 	}
 
 	public static int Open(String s){
@@ -116,14 +119,15 @@ public class OS{
 		returnVal = null;
 		//add the open string to the parameters
 		params.add(s);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the current process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 		//sleep until the kernel is able to supply a file descriptor
 		while(returnVal == null){
 			try{
-				Thread.sleep(50);
+				Thread.sleep(20);
 			}
 			catch(InterruptedException e){
 				throw new RuntimeException(e);
@@ -140,10 +144,11 @@ public class OS{
 		params = new ArrayList<Object>();
 		//add the id to the parameters
 		params.add(id);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 	}
 
 	public static byte[] Read(int id, int size){
@@ -157,14 +162,15 @@ public class OS{
 		params.add(size);
 		//reset the returnVal
 		returnVal = null;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 		//sleep until the kernel provides a data response for the read
 		while(returnVal == null){
 			try{
-				Thread.sleep(50);
+				Thread.sleep(20);
 			}
 			catch(InterruptedException e){
 				throw new RuntimeException(e);
@@ -183,10 +189,11 @@ public class OS{
 		params.add(id);
 		//add the size to the parameters
 		params.add(to);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 	}
 
 	public static int Write(int id, byte[] data){
@@ -200,14 +207,15 @@ public class OS{
 		params.add(data);
 		//null the return val
 		returnVal = null;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
 		//sleep until the kernel provides a return from the device
 		while(returnVal == null){
 			try{
-				Thread.sleep(50);
+				Thread.sleep(20);
 			}
 			catch(InterruptedException e){
 				throw new RuntimeException(e);
@@ -221,9 +229,101 @@ public class OS{
 	public static void Exit(){
 		//set the currentCall
 		currentCall = CallType.Exit;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
 		//start the kernel
 		kernel.start();
 		//stop the currently running process
-		kernel.getScheduler().getCurrentlyRunning().stop();
+		current.stop();
+	}
+
+
+	public static int GetPID(){
+		//set current call
+		currentCall = CallType.GetPID;
+		//null the return val
+		returnVal = null;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop the currently running process
+		kernel.start();
+		current.stop();
+		//wait for the return val to be populated
+		while(returnVal == null){
+			try{
+				Thread.sleep(20);
+			}
+			catch(InterruptedException e){
+				throw new RuntimeException(e);
+			}
+		}
+		//return the PID
+		return (int) returnVal;
+	}
+
+	public static int GetPIDByName(String pname){
+		//set the current call
+		currentCall = CallType.GetPIDByName;
+		//null the return val
+		returnVal = null;
+		params = new ArrayList<>();
+		//add the pname to the params
+		params.add(pname);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop the currently running process
+		kernel.start();
+		current.stop();
+		//wait for the return val to be populated
+		while(returnVal == null){
+			try{
+				Thread.sleep(20);
+			}
+			catch(InterruptedException e){
+				throw new RuntimeException(e);
+			}
+		}
+		//return the PID
+		return (int) returnVal;
+	}
+
+	public static void SendMessage(KernelMessage km){
+		//set the current call
+		currentCall = CallType.SendMessage;
+		params = new ArrayList<>();
+		//add the message to the params
+		params.add(km);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop the currently running process
+		kernel.start();
+		current.stop();
+	}
+
+	public static KernelMessage WaitForMessage(){
+		//set the current call
+		currentCall = CallType.WaitForMessage;
+		//null the return val
+		returnVal = null;
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop the currently running process
+		kernel.start();
+		current.stop();
+		//if a process was descheduled and waiting for a message
+		//this condition will succeed 
+		if(!(returnVal instanceof KernelMessage)){
+			//set the current call to fetch this processes waiting message
+			currentCall = CallType.FetchMessage;
+			//start the kernel and stop the process
+			kernel.start();
+			current.stop();
+			//wait for the return val to be populated with the waiting message
+			while(!(returnVal instanceof KernelMessage)){
+				try{
+					Thread.sleep(20);
+				}
+				catch(InterruptedException e){
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		//return the message
+		return (KernelMessage) returnVal;
 	}
 }

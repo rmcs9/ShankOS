@@ -17,5 +17,9 @@ public class Main{
 		//print random numbers process - opens up a random device, prints 
 		//random devices
 		OS.CreateProcess(new PrintRandomProcess(), OS.Priority.Interactive);
+		//ping and pong message processes - sends messages back and forth, 
+		//incrementing "what" each time
+		OS.CreateProcess(new PingProcess(), OS.Priority.Interactive);
+		OS.CreateProcess(new PongProcess(), OS.Priority.Interactive);
  	}
 }

@@ -59,6 +59,21 @@ public class Kernel implements Runnable, Device{
 				case Exit:
 					scheduler.Exit();	
 				break;
+				case GetPID:
+					OS.returnVal = scheduler.GetPID();	
+				break;
+				case GetPIDByName:
+					OS.returnVal = scheduler.GetPIDByName((String) OS.params.get(0));	
+				break;
+				case SendMessage:
+					SendMessage((KernelMessage) OS.params.get(0));
+				break;
+				case WaitForMessage:
+					OS.returnVal = WaitForMessage();
+				break;
+				case FetchMessage:
+					OS.returnVal = FetchMessage();
+				break;
 			}
 			//start the new current process
 			System.out.println("currently running: " + scheduler.getCurrentlyRunning().getPname());
@@ -71,7 +86,7 @@ public class Kernel implements Runnable, Device{
 	}
 
 	public Kernel(){
-		thread = new Thread(this, "KERNAL");
+		thread = new Thread(this, "KERNEL");
 		semaphore = new Semaphore(0);
 		scheduler = new Scheduler(this);
 		vfs = new VFS();
@@ -133,5 +148,53 @@ public class Kernel implements Runnable, Device{
 	public void Seek(int id, int size){
 		//call vfs seek on the vfsID assoiated with the provided file descriptor
 		vfs.Seek(scheduler.getCurrentlyRunning().fileDescriptors[id], size);
+	}
+
+
+	//KERNEL MESSAGE ASSIGNMENT!!!!-----------------------------------------------------------
+	
+
+	private void SendMessage(KernelMessage km){
+		//copy the incoming message
+		KernelMessage copy = new KernelMessage(km);
+		//find the senders PID
+		copy.senderPID = scheduler.GetPID();
+		//find the targets PCB
+		PCB target = scheduler.pidFetch(copy.targetPID);
+		//if the target exists, 
+		if(target != null){
+			//add the message to its queue
+			target.msgQueue.add(copy);
+			//if the target is dequeued and waiting for a message...
+			if(scheduler.PCBisWaiting(target.PID)){
+				//wake up the target
+				scheduler.msgWake(target.PID);
+			}
+		}
+	}
+
+	private KernelMessage WaitForMessage(){
+		//if the current process has a message waiting
+		if(!scheduler.getCurrentlyRunning().msgQueue.isEmpty()){
+			//return the waiting message
+			return scheduler.getCurrentlyRunning().msgQueue.remove();	
+		}
+		//if there are no messages for this process
+		else{
+			//deschedule the process
+			scheduler.waitForMSG();
+			return null;
+		}
+	}
+
+	private KernelMessage FetchMessage(){
+		//if the process has a message waiting
+		if(!scheduler.getCurrentlyRunning().msgQueue.isEmpty()){
+			//return the message
+			return scheduler.getCurrentlyRunning().msgQueue.remove();	
+		}
+		else{
+			throw new RuntimeException("ATTEMPTING TO FETCH A MESSAGE FOR A PROCESS WITH NO MESSAGES");
+		}
 	}
 }

@@ -1,6 +1,6 @@
 package ICSI412;
 
-
+import java.util.LinkedList;
 
 public class PCB{
 	
@@ -17,6 +17,8 @@ public class PCB{
 	public int PID;
 
 	public int[] fileDescriptors;
+
+	public LinkedList<KernelMessage> msgQueue;
 	
 	public PCB(UserlandProcess u, OS.Priority p){
 		PID = ++nextPID;
@@ -27,6 +29,7 @@ public class PCB{
 		for(int i = 0; i < 10; i++){
 			fileDescriptors[i] = -1;
 		}
+		msgQueue = new LinkedList<>();
 	}
 
 	public void start(){
