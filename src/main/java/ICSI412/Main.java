@@ -21,5 +21,8 @@ public class Main{
 		//incrementing "what" each time
 		OS.CreateProcess(new PingProcess(), OS.Priority.Interactive);
 		OS.CreateProcess(new PongProcess(), OS.Priority.Interactive);
+		//memory paging processes. read and write addresses for memory
+		OS.CreateProcess(new PagingProcess1(), OS.Priority.Interactive);
+		OS.CreateProcess(new PagingProcess2(), OS.Priority.Interactive);
  	}
 }

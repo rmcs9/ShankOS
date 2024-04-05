@@ -1,6 +1,7 @@
 package ICSI412;
 
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class PCB{
 	
@@ -19,6 +20,8 @@ public class PCB{
 	public int[] fileDescriptors;
 
 	public LinkedList<KernelMessage> msgQueue;
+
+	private int[] memMap;
 	
 	public PCB(UserlandProcess u, OS.Priority p){
 		PID = ++nextPID;
@@ -30,6 +33,10 @@ public class PCB{
 			fileDescriptors[i] = -1;
 		}
 		msgQueue = new LinkedList<>();
+		memMap = new int[100];
+		for(int i = 0; i < 100; i++){
+			memMap[i] = -1;
+		}
 	}
 
 	public void start(){
@@ -93,5 +100,70 @@ public class PCB{
 
 	public void exit(){
 		up.exited = true;
+	}
+
+	public int getMappedPage(int virPage){
+		return memMap[virPage];
+	}
+
+	public int findBlock(int amount){
+		//for every page of virtual memory for this process...
+		for(int i = 0; i < 100; i++){
+			//if the current page is free
+			if(memMap[i] == -1){
+				//save the start of the block
+				int save = i;
+				boolean fullBlock = true;
+				//look ahead 'amount' pages and ensure that all of the requested pages are free
+				for(int j = 1; j != amount; j++, i++){
+					if(memMap[i] != -1){
+						//if one of the pages in the requested block is in use,
+						//set the flag and break
+						fullBlock = false;
+						break;
+					}
+				}
+				//if the block was able to stay intact,
+				//return the start of the block
+				if(fullBlock){
+					return save;
+				}
+			}
+		}
+		//return -1 for failure
+		return -1;
+	}
+
+	public void mapMemory(int virtStart, int[] physAddrs){
+		//given a virtual page start, and an array of physical pages to map to...
+		//iterate trhough the virtual block from the start, and map each given
+		//physical address to its cooresponding spot in the block
+		for(int i = 0, j = virtStart; i < physAddrs.length; i++, j++){
+			memMap[j] = physAddrs[i];	
+		}
+	}
+
+	public int[] freeBlock(int startPage, int pages){
+		//given a virtual page to start and an amount of pages to clear
+		//unmap all the virtual pages and save what physical pages they were mapped to
+		//for later removal
+		int[] physAddrs = new int[pages];
+		for(int i = startPage, j = 0; j < pages; i++, j++){
+			physAddrs[j] = memMap[i];	
+			memMap[i] = -1;
+		}
+		return physAddrs;
+	}
+
+	public ArrayList<Integer> clearMemory(){
+		//find all the physical pages this process is currently holding
+		//and return them for later removal
+		ArrayList<Integer> ret = new ArrayList<>();
+		for(int i = 0; i < 100; i++){
+			if(memMap[i] != -1){
+				ret.add(memMap[i]);	
+			}
+		}
+		return ret;
 	}
 }

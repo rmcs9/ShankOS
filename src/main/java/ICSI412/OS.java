@@ -9,7 +9,8 @@ public class OS{
 	public enum CallType{
 		CreateProcess, SwitchProcess, Sleep, CreatePriorityProcess,
 		Open, Close, Read, Seek, Write, Exit, GetPID, GetPIDByName,
-		SendMessage, WaitForMessage, FetchMessage, 
+		SendMessage, WaitForMessage, FetchMessage, GetMapping,
+		AllocateMemory, FreeMemory,
 	}
 
 	public enum Priority{
@@ -109,6 +110,10 @@ public class OS{
 		//stop the currently running process
 		current.stop();
 	}
+
+
+//----------------------- DEVICES ---------------------------------------------
+	
 
 	public static int Open(String s){
 		//set the current call
@@ -236,6 +241,7 @@ public class OS{
 		current.stop();
 	}
 
+//----------------------- MESSAGES ---------------------------------------------
 
 	public static int GetPID(){
 		//set current call
@@ -326,4 +332,95 @@ public class OS{
 		//return the message
 		return (KernelMessage) returnVal;
 	}
+
+//------------------------- PAGING ----------------------------------------
+
+	public static void GetMapping(int virtualPageNumber){
+		//set the current call
+		currentCall = CallType.GetMapping;
+		//reset params
+		params = new ArrayList<Object>();
+		//add the virtual page num to params
+		params.add(virtualPageNumber);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop the current process
+		kernel.start();
+		current.stop();
+	}
+
+	public static int AllocateMemory(int size){
+		//ensure the size is divisble by 1024
+		if(size % 1024 != 0){
+			System.out.println("attempting to allocate memory with size not divisable by 1024." +
+				" size: " + size);
+			OS.Exit();
+			return -1;
+		}
+		//set the current call and params
+		//clear the return val
+		currentCall = CallType.AllocateMemory;
+		returnVal = null;
+		params = new ArrayList<Object>();
+		params.add(size);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		//start the kernel and stop currently running
+		kernel.start();
+		current.stop();
+		while(returnVal == null){
+			try{
+				Thread.sleep(20);
+			}
+			catch(InterruptedException e){
+				throw new RuntimeException(e);
+			}
+		}
+		//if the allocate fails...
+		if((int) returnVal == -1){
+			//exit the process
+			OS.Exit();
+		}
+		return (int) returnVal;
+	}
+
+	public static boolean FreeMemory(int pointer, int size){
+		//ensure that size and pointer addr are divisble by 1024
+		if(size % 1024 != 0){
+			System.out.println("attempting to free memory of invalid size. " +
+				"size: " + size);
+			OS.Exit();
+			return false;
+		}
+		if(pointer % 1024 != 0){
+			System.out.println("attempting to free memory from an invalid memory address. " +
+				"pointer: " + pointer);
+			OS.Exit();
+			return false;
+		}
+		//set current call and params
+		//reset return val
+		currentCall = CallType.FreeMemory;
+		returnVal = null;
+		params = new ArrayList<Object>();
+		params.add(pointer);
+		params.add(size);
+		PCB current = kernel.getScheduler().getCurrentlyRunning();
+		kernel.start();
+		current.stop();
+		while(returnVal == null){
+			try{
+				Thread.sleep(20);
+			}
+			catch(InterruptedException e){
+				throw new RuntimeException(e);
+			}
+		}
+		//if the free fails...
+		if(!(boolean)returnVal){
+			//kill the process
+			OS.Exit();	
+		}
+		return (boolean) returnVal;
+	}
+
+
 }

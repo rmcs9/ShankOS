@@ -1,6 +1,8 @@
 package ICSI412;
 
 import java.util.concurrent.Semaphore;
+import java.util.Random;
+import java.util.ArrayList;
 
 public class Kernel implements Runnable, Device{
 	
@@ -11,6 +13,8 @@ public class Kernel implements Runnable, Device{
 	private Semaphore semaphore;
 
 	private VFS vfs;
+
+	private boolean[] freeSpace;
 
 	public void start(){
 		semaphore.release();	
@@ -33,6 +37,7 @@ public class Kernel implements Runnable, Device{
 					OS.returnVal = scheduler.CreateProcess((UserlandProcess)OS.params.get(0));
 				break;
 				case SwitchProcess:
+					UserlandProcess.TLB = new int[2][2];
 					scheduler.SwitchProcess();
 				break;
 				case Sleep:
@@ -57,6 +62,7 @@ public class Kernel implements Runnable, Device{
 					Seek((int) OS.params.get(0), (int) OS.params.get(1));
 				break;
 				case Exit:
+					ExitFreeMemory();
 					scheduler.Exit();	
 				break;
 				case GetPID:
@@ -74,6 +80,15 @@ public class Kernel implements Runnable, Device{
 				case FetchMessage:
 					OS.returnVal = FetchMessage();
 				break;
+				case GetMapping:
+					GetMapping((int) OS.params.get(0));
+				break;
+				case AllocateMemory:
+					OS.returnVal = AllocateMemory((int) OS.params.get(0));
+				break;
+				case FreeMemory:
+					OS.returnVal = FreeMemory((int) OS.params.get(0), (int) OS.params.get(1));
+				break;
 			}
 			//start the new current process
 			System.out.println("currently running: " + scheduler.getCurrentlyRunning().getPname());
@@ -90,8 +105,11 @@ public class Kernel implements Runnable, Device{
 		semaphore = new Semaphore(0);
 		scheduler = new Scheduler(this);
 		vfs = new VFS();
+		freeSpace = new boolean[1024];
 		thread.start();
 	}
+
+//--------------------- DEVICES -------------------------------------
 
 	public void freeDevices(){
 		PCB crp = scheduler.getCurrentlyRunning();
@@ -151,7 +169,7 @@ public class Kernel implements Runnable, Device{
 	}
 
 
-	//KERNEL MESSAGE ASSIGNMENT!!!!-----------------------------------------------------------
+//KERNEL MESSAGE ASSIGNMENT!!!!-----------------------------------------------------------
 	
 
 	private void SendMessage(KernelMessage km){
@@ -195,6 +213,75 @@ public class Kernel implements Runnable, Device{
 		}
 		else{
 			throw new RuntimeException("ATTEMPTING TO FETCH A MESSAGE FOR A PROCESS WITH NO MESSAGES");
+		}
+	}
+
+//------------------------- PAGING ---------------------------------
+	
+
+	private void GetMapping(int virPage){
+		PCB current = scheduler.getCurrentlyRunning();
+		Random rand = new Random();
+		//get a random int from 0-1 
+		int TLBindex = rand.nextInt(2);
+		//get the physical page mapped to by the provided virtual page
+		int physPage = current.getMappedPage(virPage);
+		//update the TLB based on the random number
+		UserlandProcess.TLB[TLBindex][0] = virPage;
+		UserlandProcess.TLB[TLBindex][1] = physPage;
+	}
+
+	private int AllocateMemory(int size){
+		PCB current = scheduler.getCurrentlyRunning();
+		//find the amount of pages for this allocate
+		int pages = size / 1024;
+		//find a contigous block in the PCB
+		int virBlockStart = current.findBlock(pages);
+		//collect physical pages from freeSpace
+		int[] physPages = new int[pages];
+		for(int i = 0, j = 0 ;j < pages; i++){
+			if(i == 1024){
+				return -1;
+			}
+			if(!freeSpace[i]){
+				physPages[j] = i;
+				j++;
+				freeSpace[i] = true;
+			}
+		}
+		//map the memory in the PCB and return the starting address
+		current.mapMemory(virBlockStart, physPages);
+		return virBlockStart * 1024;
+	}
+
+	private boolean FreeMemory(int pointer, int size){
+		PCB current = scheduler.getCurrentlyRunning();
+		//find the starting page and the number of pages being freed
+		int startPage = pointer / 1024;
+		int pages = size / 1024;
+		//if the start page and pages to be freed exceeds the max page..
+		//return false
+		if(startPage + pages > 1024){
+			return false;
+		}
+		//free the block
+		int[] physAddrs = current.freeBlock(startPage, pages);
+		//reset the free space	
+		for(int i = 0; i < physAddrs.length; i++){
+			freeSpace[physAddrs[i]] = false;
+		}
+
+		return true;
+	}
+
+	private void ExitFreeMemory(){
+		PCB current = scheduler.getCurrentlyRunning();
+		System.out.println("FREEING MEMORY ON PROCESS: " + current.getPname());
+		//find all the physical addressses being used by this process
+		ArrayList<Integer> physAddrs = current.clearMemory();
+		//reset all the phys addresses in free space
+		for(int addr : physAddrs){
+			freeSpace[addr] = false;
 		}
 	}
 }
