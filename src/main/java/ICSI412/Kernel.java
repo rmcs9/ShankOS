@@ -16,6 +16,11 @@ public class Kernel implements Runnable, Device{
 
 	private boolean[] freeSpace;
 
+	private FakeFileSystem swapFile;	
+
+	private int pageNumber;
+	private int swapFileID;
+
 	public void start(){
 		semaphore.release();	
 	}
@@ -37,7 +42,7 @@ public class Kernel implements Runnable, Device{
 					OS.returnVal = scheduler.CreateProcess((UserlandProcess)OS.params.get(0));
 				break;
 				case SwitchProcess:
-					UserlandProcess.TLB = new int[2][2];
+					resetTLB();
 					scheduler.SwitchProcess();
 				break;
 				case Sleep:
@@ -62,6 +67,7 @@ public class Kernel implements Runnable, Device{
 					Seek((int) OS.params.get(0), (int) OS.params.get(1));
 				break;
 				case Exit:
+					resetTLB();
 					ExitFreeMemory();
 					scheduler.Exit();	
 				break;
@@ -106,6 +112,9 @@ public class Kernel implements Runnable, Device{
 		scheduler = new Scheduler(this);
 		vfs = new VFS();
 		freeSpace = new boolean[1024];
+		swapFile = new FakeFileSystem();
+		swapFileID = swapFile.Open("swapfile.txt");
+		pageNumber = 0;
 		thread.start();
 	}
 
@@ -225,10 +234,72 @@ public class Kernel implements Runnable, Device{
 		//get a random int from 0-1 
 		int TLBindex = rand.nextInt(2);
 		//get the physical page mapped to by the provided virtual page
-		int physPage = current.getMappedPage(virPage);
+		VirtualToPhysicalMapping mapObj = current.getMappedPage(virPage);
+		//if memory was not allocated for this virtual page, set the tlb to -1 and return
+		if(mapObj == null){
+			UserlandProcess.TLB[TLBindex][0] = virPage;
+			UserlandProcess.TLB[TLBindex][1] = -1;
+			return;
+		}
+		//if the virtual page was allocated, but has not yet been used...
+		if(mapObj.physPageNum == -1){
+			//attempt to find a physcial page to map to
+			for(int i = 0; i < 1024; i++){
+				if(!freeSpace[i]){
+					mapObj.physPageNum = i;
+					freeSpace[i] = true;
+					break;
+				}
+			}
+			//if there are no physical pages to map to, we must perform a page swap
+			if(mapObj.physPageNum == -1){
+				System.out.println("--------- PAGE SWAPPING TRIGGERED ---------");
+				//select a random process to steal from
+				PCB victimProcess = scheduler.getRandomProcess();
+				//find the specific page from this process to steal
+				VirtualToPhysicalMapping pageToSteal = null;
+				for(int i = 0; i < 100; i++){
+					if(victimProcess.getMappedPage(i) != null){
+						if(victimProcess.getMappedPage(i).physPageNum != -1){
+							pageToSteal = victimProcess.getMappedPage(i);
+							break;
+						}
+					}
+				}
+				if(pageToSteal == null){
+					throw new RuntimeException("could not find a page to steal in victimProcess");
+				}
+				System.out.println("VICTIM PROCESS: " + victimProcess.getPname());
+				System.out.println("STEALING PHYSICAL PAGE: " + pageToSteal.physPageNum);
+				//obtain the victimProcesses page data
+				byte[] stolenPageData = UserlandProcess.writeOutPage(pageToSteal.physPageNum);
+				//write the victim data to the swap file
+				if(swapFile.Write(swapFileID, stolenPageData) == -1){
+					throw new RuntimeException("Failed to write page data to swap file...");
+				}
+				//map the stealing processes physical page to the stolen page
+				mapObj.physPageNum = pageToSteal.physPageNum;
+				//map the victimprocesses page to -1
+				pageToSteal.physPageNum = -1;
+				//set the victims disk location
+				pageToSteal.diskPageNum = pageNumber;
+				System.out.println("STOLEN PAGE DATA WRITTEN TO: " + pageToSteal.diskPageNum);
+				System.out.println("-------------------------------------------");
+				//increment the swap file pointer
+				pageNumber++;
+			}
+		}
+		//if the stealing page was written to disk
+		if(mapObj.diskPageNum != -1){
+			//load the page in from the swap file
+			swapFile.Seek(swapFileID, mapObj.diskPageNum * 1024);
+			byte[] data = swapFile.Read(swapFileID, 1024);
+			UserlandProcess.loadInPage(mapObj.physPageNum, data);
+			swapFile.Seek(swapFileID, pageNumber * 1024);
+		}
 		//update the TLB based on the random number
 		UserlandProcess.TLB[TLBindex][0] = virPage;
-		UserlandProcess.TLB[TLBindex][1] = physPage;
+		UserlandProcess.TLB[TLBindex][1] = mapObj.physPageNum;
 	}
 
 	private int AllocateMemory(int size){
@@ -237,20 +308,6 @@ public class Kernel implements Runnable, Device{
 		int pages = size / 1024;
 		//find a contigous block in the PCB
 		int virBlockStart = current.findBlock(pages);
-		//collect physical pages from freeSpace
-		int[] physPages = new int[pages];
-		for(int i = 0, j = 0 ;j < pages; i++){
-			if(i == 1024){
-				return -1;
-			}
-			if(!freeSpace[i]){
-				physPages[j] = i;
-				j++;
-				freeSpace[i] = true;
-			}
-		}
-		//map the memory in the PCB and return the starting address
-		current.mapMemory(virBlockStart, physPages);
 		return virBlockStart * 1024;
 	}
 
@@ -283,5 +340,12 @@ public class Kernel implements Runnable, Device{
 		for(int addr : physAddrs){
 			freeSpace[addr] = false;
 		}
+	}
+
+	private void resetTLB() {
+		UserlandProcess.TLB[0][0] = -1;
+		UserlandProcess.TLB[0][1] = -1;
+		UserlandProcess.TLB[1][0] = -1;
+		UserlandProcess.TLB[1][1] = -1;
 	}
 }

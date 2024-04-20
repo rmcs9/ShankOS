@@ -16,7 +16,6 @@ public class Scheduler{
 
 	private Kernel kernel;
 
-	//NEW LISTS
 	private LinkedList<PCB> realtimeProcesses;
 	private LinkedList<PCB> interactiveProcesses;
 	private LinkedList<PCB> backroundProcesses;
@@ -270,6 +269,23 @@ public class Scheduler{
 		};
 		//interrupt is scheduled to be executed every 250 ms
 		timer.scheduleAtFixedRate(interrupt, 0, 250);
+	}
+
+
+	//collects all processes with valid pages for swapping
+	//and returns one at random to the kernel
+	public PCB getRandomProcess(){
+		LinkedList<PCB> stealList = new LinkedList<>();	
+		//collect all processes that have pages into a list...
+		for(PCB process : pidToPCB.values()){
+			if(process.hasPage()){
+				stealList.add(process);
+			}
+		}
+		//use a random integer between 0 - list size [not inclusive]
+		//to select a random process from the list
+		Random rand = new Random();	
+		return stealList.get(rand.nextInt(stealList.size()));
 	}
 
 }

@@ -21,7 +21,8 @@ public class PCB{
 
 	public LinkedList<KernelMessage> msgQueue;
 
-	private int[] memMap;
+	// private int[] memMap;
+	private VirtualToPhysicalMapping[] memMap;
 	
 	public PCB(UserlandProcess u, OS.Priority p){
 		PID = ++nextPID;
@@ -33,10 +34,7 @@ public class PCB{
 			fileDescriptors[i] = -1;
 		}
 		msgQueue = new LinkedList<>();
-		memMap = new int[100];
-		for(int i = 0; i < 100; i++){
-			memMap[i] = -1;
-		}
+		memMap = new VirtualToPhysicalMapping[100];
 	}
 
 	public void start(){
@@ -102,7 +100,7 @@ public class PCB{
 		up.exited = true;
 	}
 
-	public int getMappedPage(int virPage){
+	public VirtualToPhysicalMapping getMappedPage(int virPage){
 		return memMap[virPage];
 	}
 
@@ -110,13 +108,14 @@ public class PCB{
 		//for every page of virtual memory for this process...
 		for(int i = 0; i < 100; i++){
 			//if the current page is free
-			if(memMap[i] == -1){
+			if(memMap[i] == null){
 				//save the start of the block
 				int save = i;
 				boolean fullBlock = true;
 				//look ahead 'amount' pages and ensure that all of the requested pages are free
 				for(int j = 1; j != amount; j++, i++){
-					if(memMap[i] != -1){
+					if(memMap[i] != null){
+
 						//if one of the pages in the requested block is in use,
 						//set the flag and break
 						fullBlock = false;
@@ -126,6 +125,9 @@ public class PCB{
 				//if the block was able to stay intact,
 				//return the start of the block
 				if(fullBlock){
+					for(int j = save, k = 0; k < amount; j++, k++){
+						memMap[j] = new VirtualToPhysicalMapping();
+					}
 					return save;
 				}
 			}
@@ -134,23 +136,16 @@ public class PCB{
 		return -1;
 	}
 
-	public void mapMemory(int virtStart, int[] physAddrs){
-		//given a virtual page start, and an array of physical pages to map to...
-		//iterate trhough the virtual block from the start, and map each given
-		//physical address to its cooresponding spot in the block
-		for(int i = 0, j = virtStart; i < physAddrs.length; i++, j++){
-			memMap[j] = physAddrs[i];	
-		}
-	}
-
 	public int[] freeBlock(int startPage, int pages){
 		//given a virtual page to start and an amount of pages to clear
 		//unmap all the virtual pages and save what physical pages they were mapped to
 		//for later removal
 		int[] physAddrs = new int[pages];
 		for(int i = startPage, j = 0; j < pages; i++, j++){
-			physAddrs[j] = memMap[i];	
-			memMap[i] = -1;
+			if(memMap[i].physPageNum != -1){
+				physAddrs[j] = memMap[i].physPageNum;	
+			}
+			memMap[i] = null;
 		}
 		return physAddrs;
 	}
@@ -160,10 +155,24 @@ public class PCB{
 		//and return them for later removal
 		ArrayList<Integer> ret = new ArrayList<>();
 		for(int i = 0; i < 100; i++){
-			if(memMap[i] != -1){
-				ret.add(memMap[i]);	
+			if(memMap[i] != null){
+				if(memMap[i].physPageNum != -1)
+					ret.add(memMap[i].physPageNum);
 			}
 		}
 		return ret;
+	}
+
+	//determines whether this process has a page that is
+	//in use and available to be used in a page swap
+	public boolean hasPage(){
+		for(int i = 0; i < memMap.length; i++){
+			if(memMap[i] != null){
+				if(memMap[i].physPageNum != -1){
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

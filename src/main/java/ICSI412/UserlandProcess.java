@@ -5,7 +5,7 @@ import java.util.concurrent.Semaphore;
 public abstract class UserlandProcess implements Runnable{
 
 	private static byte[] physicalMemory = new byte[1024 * 1024];
-	public static int[][] TLB = new int[2][2];
+	public static int[][] TLB = {{-1, -1}, {-1, -1}};
 
 	//ONLY HERE FOR THE PURPOSE OF TESTING
 	public String pname;
@@ -70,7 +70,7 @@ public abstract class UserlandProcess implements Runnable{
 			physPage = TLB[0][1];	
 		}
 		else if(virPage == TLB[1][0]){
-			physPage = TLB[0][1];
+			physPage = TLB[1][1];
 		}
 		//if the page is not found in the TLB
 		else{
@@ -118,6 +118,27 @@ public abstract class UserlandProcess implements Runnable{
 		//at the address
 		int physAddr = physPage * 1024 + offset;
 		physicalMemory[physAddr] = val;
+	}
+
+	//helper method for collecting page data from physical memory
+	//and sending it back to the kernel for page swap
+	public static byte[] writeOutPage(int physPage){
+		byte[] data = new byte[1024];
+		for(int i = 0, j = physPage * 1024; i < 1024; i++, j++){
+			//collect the current page data
+			data[i] = physicalMemory[j];
+			//clear the old data for the next process to use
+			physicalMemory[j] = 0;
+		}
+		return data;
+	}
+
+	//helper method to load a page into physical memory from the
+	//swap file.
+	public static void loadInPage(int physPage, byte[] data){
+		for(int i = 0, j = physPage * 1024; i < 1024; i++, j++){
+			physicalMemory[j] = data[i];
+		}
 	}
 
 	public UserlandProcess(String processName){
