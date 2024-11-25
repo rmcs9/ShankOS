@@ -27,4 +27,16 @@ A number of Operating System calls are available to the user:
 - AllocateMemory() : allocate a chunk of memory of a specified size for this process
 - FreeMemory() : free a chunk of specified memory from this process
 ---
+
 ![uml.png](img/uml.png)
+
+---
+
+## Running the simulation
+
+to run the simulation, ensure that maven is installed. Then, navigate to the projects directory and execute the maven goal:
+
+```bash
+mvn clean compile exec:java
+```
+
