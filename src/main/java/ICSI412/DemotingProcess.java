@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class DemotingProcess extends UserlandProcess{
-	
+
 	public void main(){
 		while(true){
 			System.out.println("DEMOTING");
@@ -16,7 +16,7 @@ public class DemotingProcess extends UserlandProcess{
 			cooperate();
 		}
 	}
-	
+
 	public DemotingProcess(){
 		super("DEMOTING");
 	}

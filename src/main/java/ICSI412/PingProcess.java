@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class PingProcess extends UserlandProcess {
-	
+
 	public void main(){
 		//get this processes PID
 		int thisPID = OS.GetPID();

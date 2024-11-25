@@ -4,9 +4,9 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 
 public class PCB{
-	
+
 	private UserlandProcess up;
-	
+
 	public long sleepTime = 0;
 
 	public OS.Priority priority;
@@ -14,7 +14,7 @@ public class PCB{
 	private static int nextPID = 0;
 
 	public int timeouts = 0;
-	
+
 	public int PID;
 
 	public int[] fileDescriptors;
@@ -23,7 +23,7 @@ public class PCB{
 
 	// private int[] memMap;
 	private VirtualToPhysicalMapping[] memMap;
-	
+
 	public PCB(UserlandProcess u, OS.Priority p){
 		PID = ++nextPID;
 		up = u;
@@ -157,7 +157,7 @@ public class PCB{
 		for(int i = 0; i < 100; i++){
 			if(memMap[i] != null){
 				if(memMap[i].physPageNum != -1)
-					ret.add(memMap[i].physPageNum);
+				ret.add(memMap[i].physPageNum);
 			}
 		}
 		return ret;

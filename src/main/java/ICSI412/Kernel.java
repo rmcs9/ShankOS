@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.ArrayList;
 
 public class Kernel implements Runnable, Device{
-	
+
 	private Scheduler scheduler;
 
 	private Thread thread;
@@ -118,7 +118,7 @@ public class Kernel implements Runnable, Device{
 		thread.start();
 	}
 
-//--------------------- DEVICES -------------------------------------
+	//--------------------- DEVICES -------------------------------------
 
 	public void freeDevices(){
 		PCB crp = scheduler.getCurrentlyRunning();
@@ -178,8 +178,8 @@ public class Kernel implements Runnable, Device{
 	}
 
 
-//KERNEL MESSAGE ASSIGNMENT!!!!-----------------------------------------------------------
-	
+	//KERNEL MESSAGE ASSIGNMENT!!!!-----------------------------------------------------------
+
 
 	private void SendMessage(KernelMessage km){
 		//copy the incoming message
@@ -225,8 +225,8 @@ public class Kernel implements Runnable, Device{
 		}
 	}
 
-//------------------------- PAGING ---------------------------------
-	
+	//------------------------- PAGING ---------------------------------
+
 
 	private void GetMapping(int virPage){
 		PCB current = scheduler.getCurrentlyRunning();

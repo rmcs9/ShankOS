@@ -28,7 +28,7 @@ public class PagingProcess1 extends UserlandProcess{
 			throw new RuntimeException(e);
 		}
 		cooperate();
-		
+
 		System.out.println("PAGING PROCESS 1: NOW ATTEMPTING TO READ FROM OUTSIDE PROCESS MEMORY...");
 		byte error = Read(3333);
 		OS.Exit();

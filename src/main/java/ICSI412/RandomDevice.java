@@ -26,7 +26,7 @@ public class RandomDevice implements Device{
 		//return -1 on failure
 		return -1;
 	}
-	
+
 	public void Close(int id){
 		//null the random object at the specified location
 		rands[id] = null;

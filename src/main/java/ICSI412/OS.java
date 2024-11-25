@@ -3,7 +3,7 @@ package ICSI412;
 import java.util.ArrayList;
 
 public class OS{
-	
+
 	private static Kernel kernel;
 
 	public enum CallType{
@@ -22,7 +22,7 @@ public class OS{
 	public static ArrayList<Object> params;
 
 	public static Object returnVal;
-	
+
 	public static int CreateProcess(UserlandProcess up){
 		//reset the parameters:
 		params = new ArrayList<Object>();
@@ -46,7 +46,7 @@ public class OS{
 				}
 			}
 		}
-		
+
 		//cast and return the return val
 		return (int)returnVal;
 	}
@@ -96,7 +96,7 @@ public class OS{
 		CreateProcess(init);
 		CreateProcess(new Idle());
 	}
-	
+
 	public static void Sleep(int milliseconds){
 		//set the current call
 		currentCall = CallType.Sleep;
@@ -112,8 +112,8 @@ public class OS{
 	}
 
 
-//----------------------- DEVICES ---------------------------------------------
-	
+	//----------------------- DEVICES ---------------------------------------------
+
 
 	public static int Open(String s){
 		//set the current call
@@ -241,7 +241,7 @@ public class OS{
 		current.stop();
 	}
 
-//----------------------- MESSAGES ---------------------------------------------
+	//----------------------- MESSAGES ---------------------------------------------
 
 	public static int GetPID(){
 		//set current call
@@ -333,7 +333,7 @@ public class OS{
 		return (KernelMessage) returnVal;
 	}
 
-//------------------------- PAGING ----------------------------------------
+	//------------------------- PAGING ----------------------------------------
 
 	public static void GetMapping(int virtualPageNumber){
 		//set the current call

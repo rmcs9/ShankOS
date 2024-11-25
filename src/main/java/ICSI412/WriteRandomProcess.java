@@ -3,7 +3,7 @@ package ICSI412;
 
 
 public class WriteRandomProcess extends UserlandProcess{
-	
+
 
 	//this process writes 2000 random numbers to a file
 	public void main(){

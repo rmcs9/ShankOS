@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class HelloWorld extends UserlandProcess{
-	
+
 	public void main(){
 		while(true){
 			System.out.println("Hello World!");

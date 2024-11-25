@@ -34,9 +34,9 @@ public class VirtualMemoryPigProcess extends UserlandProcess {
 			try{
 				Thread.sleep(250);
 			} catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            cooperate();
+				throw new RuntimeException(e);
+			}
+			cooperate();
 		}
 	}
 

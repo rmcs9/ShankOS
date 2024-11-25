@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class KernelMessage{
-	
+
 
 	public int senderPID;
 	public int targetPID;
@@ -10,7 +10,7 @@ public class KernelMessage{
 	public int msgType;
 
 	public byte[] data;
-	
+
 	//copy constructor 
 	public KernelMessage(KernelMessage k){
 		senderPID = k.senderPID;
@@ -23,6 +23,6 @@ public class KernelMessage{
 
 	public String toString(){
 		return "KERNEL MESSAGE TYPE: " + msgType + "\nTARGET: " + targetPID + 
-				"\nSENDER: " + senderPID + "\nDATA SIZE: " + data.length;
+		"\nSENDER: " + senderPID + "\nDATA SIZE: " + data.length;
 	}
 }

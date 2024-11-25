@@ -17,7 +17,7 @@ public abstract class UserlandProcess implements Runnable{
 	private boolean quantumExp;
 
 	public boolean exited;
-	
+
 	public void requestStop(){
 		quantumExp = true;
 	}

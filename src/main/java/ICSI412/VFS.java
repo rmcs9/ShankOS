@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class VFS implements Device{
-	
+
 	private int[] vfsID = new int[20];
 	private Device[] vfsDevice = new Device[20];
 	private RandomDevice random;
@@ -53,7 +53,7 @@ public class VFS implements Device{
 		//return -1 on failure
 		return -1;
 	}
-	
+
 	public void Close(int id){
 		//call close on the specified device
 		vfsDevice[id].Close(vfsID[id]);

@@ -2,7 +2,7 @@ package ICSI412;
 
 
 public class Idle extends UserlandProcess{
-	
+
 	public void main(){
 		while(true){
 			cooperate();
