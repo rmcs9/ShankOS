@@ -17,6 +17,7 @@
   </dependencies>
           <properties>
               <java.version>21</java.version>
+			<exec.mainClass>ICSI412.Main</exec.mainClass>
         </properties>
      
         <build>
